@@ -13,7 +13,7 @@ class Branch extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'organization_id',
+        'org_id',
         'name',
         'code',
         'email',
@@ -28,7 +28,7 @@ class Branch extends Model
 
     public function organization(): BelongsTo
     {
-        return $this->belongsTo(Organization::class);
+        return $this->belongsTo(Organization::class, 'org_id');
     }
 
     public function users(): HasMany

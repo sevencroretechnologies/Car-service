@@ -10,6 +10,7 @@ use App\Services\VehicleServicePricingService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use OpenApi\Annotations as OA;
 
 class VehicleServicePricingController extends Controller
 {
@@ -20,6 +21,25 @@ class VehicleServicePricingController extends Controller
         protected BranchService $branchService
     ) {}
 
+    /**
+     * @OA\Get(
+     *     path="/pricing",
+     *     summary="List pricing rules",
+     *     description="Get paginated list of vehicle service pricing rules",
+     *     operationId="pricingIndex",
+     *     tags={"Pricing"},
+     *     security={{"sanctum":{}}},
+     *
+     *     @OA\Parameter(name="per_page", in="query", description="Items per page", @OA\Schema(type="integer", default=15)),
+     *     @OA\Parameter(name="branch_id", in="query", description="Filter by branch", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="service_id", in="query", description="Filter by service", @OA\Schema(type="integer")),
+     *
+     *     @OA\Response(response=200, description="Pricing retrieved successfully"),
+     *     @OA\Response(response=400, description="Branch ID is required"),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=403, description="Forbidden")
+     * )
+     */
     public function index(Request $request): JsonResponse
     {
         try {
@@ -30,7 +50,7 @@ class VehicleServicePricingController extends Controller
                 return $this->errorResponse('Branch ID is required', 400);
             }
 
-            $branch = $this->branchService->findByIdAndOrganization($branchId, $user->organization_id);
+            $branch = $this->branchService->findByIdAndOrganization($branchId, $user->org_id);
             if (! $branch) {
                 return $this->forbiddenResponse('Branch does not belong to your organization');
             }
@@ -46,13 +66,41 @@ class VehicleServicePricingController extends Controller
         }
     }
 
+    /**
+     * @OA\Post(
+     *     path="/pricing",
+     *     summary="Create pricing rule",
+     *     description="Create a new vehicle service pricing rule",
+     *     operationId="pricingStore",
+     *     tags={"Pricing"},
+     *     security={{"sanctum":{}}},
+     *
+     *     @OA\RequestBody(required=true, @OA\JsonContent(
+     *         required={"branch_id", "service_id", "vehicle_type_id", "price"},
+     *
+     *         @OA\Property(property="branch_id", type="integer", example=1),
+     *         @OA\Property(property="service_id", type="integer", example=1),
+     *         @OA\Property(property="vehicle_type_id", type="integer", example=1),
+     *         @OA\Property(property="vehicle_brand_id", type="integer", description="Optional for brand-specific pricing"),
+     *         @OA\Property(property="vehicle_model_id", type="integer", description="Optional for model-specific pricing"),
+     *         @OA\Property(property="price", type="number", format="float", example=49.99),
+     *         @OA\Property(property="is_active", type="boolean", example=true)
+     *     )),
+     *
+     *     @OA\Response(response=201, description="Pricing created successfully"),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=403, description="Forbidden"),
+     *     @OA\Response(response=409, description="Duplicate pricing rule"),
+     *     @OA\Response(response=422, description="Validation error")
+     * )
+     */
     public function store(VehicleServicePricingRequest $request): JsonResponse
     {
         try {
             $data = $request->validated();
             $user = $request->user();
 
-            $branch = $this->branchService->findByIdAndOrganization($data['branch_id'], $user->organization_id);
+            $branch = $this->branchService->findByIdAndOrganization($data['branch_id'], $user->org_id);
             if (! $branch) {
                 return $this->forbiddenResponse('Branch does not belong to your organization');
             }
@@ -78,6 +126,23 @@ class VehicleServicePricingController extends Controller
         }
     }
 
+    /**
+     * @OA\Get(
+     *     path="/pricing/{id}",
+     *     summary="Get pricing rule",
+     *     description="Get pricing rule details by ID",
+     *     operationId="pricingShow",
+     *     tags={"Pricing"},
+     *     security={{"sanctum":{}}},
+     *
+     *     @OA\Parameter(name="id", in="path", required=true, description="Pricing ID", @OA\Schema(type="integer")),
+     *
+     *     @OA\Response(response=200, description="Pricing retrieved successfully"),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=403, description="Forbidden"),
+     *     @OA\Response(response=404, description="Pricing not found")
+     * )
+     */
     public function show(Request $request, int $id): JsonResponse
     {
         try {
@@ -88,7 +153,7 @@ class VehicleServicePricingController extends Controller
                 return $this->notFoundResponse('Pricing not found');
             }
 
-            $branch = $this->branchService->findByIdAndOrganization($pricing->branch_id, $user->organization_id);
+            $branch = $this->branchService->findByIdAndOrganization($pricing->branch_id, $user->org_id);
             if (! $branch) {
                 return $this->forbiddenResponse('Pricing does not belong to your organization');
             }
@@ -101,6 +166,37 @@ class VehicleServicePricingController extends Controller
         }
     }
 
+    /**
+     * @OA\Put(
+     *     path="/pricing/{id}",
+     *     summary="Update pricing rule",
+     *     description="Update pricing rule details",
+     *     operationId="pricingUpdate",
+     *     tags={"Pricing"},
+     *     security={{"sanctum":{}}},
+     *
+     *     @OA\Parameter(name="id", in="path", required=true, description="Pricing ID", @OA\Schema(type="integer")),
+     *
+     *     @OA\RequestBody(required=true, @OA\JsonContent(
+     *         required={"branch_id", "service_id", "vehicle_type_id", "price"},
+     *
+     *         @OA\Property(property="branch_id", type="integer"),
+     *         @OA\Property(property="service_id", type="integer"),
+     *         @OA\Property(property="vehicle_type_id", type="integer"),
+     *         @OA\Property(property="vehicle_brand_id", type="integer"),
+     *         @OA\Property(property="vehicle_model_id", type="integer"),
+     *         @OA\Property(property="price", type="number", format="float"),
+     *         @OA\Property(property="is_active", type="boolean")
+     *     )),
+     *
+     *     @OA\Response(response=200, description="Pricing updated successfully"),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=403, description="Forbidden"),
+     *     @OA\Response(response=404, description="Pricing not found"),
+     *     @OA\Response(response=409, description="Duplicate pricing rule"),
+     *     @OA\Response(response=422, description="Validation error")
+     * )
+     */
     public function update(VehicleServicePricingRequest $request, int $id): JsonResponse
     {
         try {
@@ -111,7 +207,7 @@ class VehicleServicePricingController extends Controller
                 return $this->notFoundResponse('Pricing not found');
             }
 
-            $branch = $this->branchService->findByIdAndOrganization($pricing->branch_id, $user->organization_id);
+            $branch = $this->branchService->findByIdAndOrganization($pricing->branch_id, $user->org_id);
             if (! $branch) {
                 return $this->forbiddenResponse('Pricing does not belong to your organization');
             }
@@ -140,6 +236,23 @@ class VehicleServicePricingController extends Controller
         }
     }
 
+    /**
+     * @OA\Delete(
+     *     path="/pricing/{id}",
+     *     summary="Delete pricing rule",
+     *     description="Soft delete a pricing rule",
+     *     operationId="pricingDestroy",
+     *     tags={"Pricing"},
+     *     security={{"sanctum":{}}},
+     *
+     *     @OA\Parameter(name="id", in="path", required=true, description="Pricing ID", @OA\Schema(type="integer")),
+     *
+     *     @OA\Response(response=200, description="Pricing deleted successfully"),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=403, description="Forbidden"),
+     *     @OA\Response(response=404, description="Pricing not found")
+     * )
+     */
     public function destroy(Request $request, int $id): JsonResponse
     {
         try {
@@ -150,7 +263,7 @@ class VehicleServicePricingController extends Controller
                 return $this->notFoundResponse('Pricing not found');
             }
 
-            $branch = $this->branchService->findByIdAndOrganization($pricing->branch_id, $user->organization_id);
+            $branch = $this->branchService->findByIdAndOrganization($pricing->branch_id, $user->org_id);
             if (! $branch) {
                 return $this->forbiddenResponse('Pricing does not belong to your organization');
             }
@@ -163,13 +276,43 @@ class VehicleServicePricingController extends Controller
         }
     }
 
+    /**
+     * @OA\Get(
+     *     path="/pricing/lookup",
+     *     summary="Lookup price",
+     *     description="Find the best matching price for a service and vehicle combination. Uses hierarchical lookup: exact model -> brand level -> type level",
+     *     operationId="pricingLookup",
+     *     tags={"Pricing"},
+     *     security={{"sanctum":{}}},
+     *
+     *     @OA\Parameter(name="branch_id", in="query", required=true, description="Branch ID", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="service_id", in="query", required=true, description="Service ID", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="vehicle_type_id", in="query", required=true, description="Vehicle Type ID", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="vehicle_brand_id", in="query", description="Vehicle Brand ID (optional)", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="vehicle_model_id", in="query", description="Vehicle Model ID (optional)", @OA\Schema(type="integer")),
+     *
+     *     @OA\Response(response=200, description="Price found", @OA\JsonContent(
+     *
+     *         @OA\Property(property="success", type="boolean", example=true),
+     *         @OA\Property(property="data", type="object",
+     *             @OA\Property(property="pricing", type="object"),
+     *             @OA\Property(property="price", type="number", example=49.99),
+     *             @OA\Property(property="match_type", type="string", enum={"exact_model", "brand_level", "type_level"})
+     *         )
+     *     )),
+     *
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=403, description="Forbidden"),
+     *     @OA\Response(response=404, description="No pricing found")
+     * )
+     */
     public function lookup(PriceLookupRequest $request): JsonResponse
     {
         try {
             $user = $request->user();
             $data = $request->validated();
 
-            $branch = $this->branchService->findByIdAndOrganization($data['branch_id'], $user->organization_id);
+            $branch = $this->branchService->findByIdAndOrganization($data['branch_id'], $user->org_id);
             if (! $branch) {
                 return $this->forbiddenResponse('Branch does not belong to your organization');
             }
@@ -211,6 +354,24 @@ class VehicleServicePricingController extends Controller
         return 'type_level';
     }
 
+    /**
+     * @OA\Get(
+     *     path="/pricing/by-service/{serviceId}",
+     *     summary="Get pricing by service",
+     *     description="Get all pricing rules for a specific service",
+     *     operationId="pricingGetByService",
+     *     tags={"Pricing"},
+     *     security={{"sanctum":{}}},
+     *
+     *     @OA\Parameter(name="serviceId", in="path", required=true, description="Service ID", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="branch_id", in="query", description="Branch ID (uses user's branch if not provided)", @OA\Schema(type="integer")),
+     *
+     *     @OA\Response(response=200, description="Pricing retrieved successfully"),
+     *     @OA\Response(response=400, description="Branch ID is required"),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=403, description="Forbidden")
+     * )
+     */
     public function getByService(Request $request, int $serviceId): JsonResponse
     {
         try {
@@ -221,7 +382,7 @@ class VehicleServicePricingController extends Controller
                 return $this->errorResponse('Branch ID is required', 400);
             }
 
-            $branch = $this->branchService->findByIdAndOrganization($branchId, $user->organization_id);
+            $branch = $this->branchService->findByIdAndOrganization($branchId, $user->org_id);
             if (! $branch) {
                 return $this->forbiddenResponse('Branch does not belong to your organization');
             }

@@ -18,7 +18,7 @@ class UserRequest extends FormRequest
         $isUpdate = $this->isMethod('PUT') || $this->isMethod('PATCH');
 
         $rules = [
-            'organization_id' => ['required', 'exists:organizations,id'],
+            'org_id' => ['required', 'exists:organizations,id'],
             'branch_id' => ['nullable', 'exists:branches,id'],
             'name' => ['required', 'string', 'max:255'],
             'email' => [

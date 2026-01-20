@@ -14,6 +14,7 @@ class VehicleServicePricing extends Model
     protected $table = 'vehicle_service_pricing';
 
     protected $fillable = [
+        'org_id',
         'branch_id',
         'service_id',
         'vehicle_type_id',
@@ -27,6 +28,11 @@ class VehicleServicePricing extends Model
         'price' => 'decimal:2',
         'is_active' => 'boolean',
     ];
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class, 'org_id');
+    }
 
     public function branch(): BelongsTo
     {

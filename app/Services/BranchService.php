@@ -8,16 +8,16 @@ use Illuminate\Database\Eloquent\Collection;
 
 class BranchService
 {
-    public function getAll(int $organizationId, int $perPage = 15): LengthAwarePaginator
+    public function getAll(int $orgId, int $perPage = 15): LengthAwarePaginator
     {
-        return Branch::where('organization_id', $organizationId)
+        return Branch::where('org_id', $orgId)
             ->orderBy('name')
             ->paginate($perPage);
     }
 
-    public function getAllWithoutPagination(int $organizationId): Collection
+    public function getAllWithoutPagination(int $orgId): Collection
     {
-        return Branch::where('organization_id', $organizationId)
+        return Branch::where('org_id', $orgId)
             ->orderBy('name')
             ->get();
     }
@@ -27,10 +27,10 @@ class BranchService
         return Branch::find($id);
     }
 
-    public function findByIdAndOrganization(int $id, int $organizationId): ?Branch
+    public function findByIdAndOrganization(int $id, int $orgId): ?Branch
     {
         return Branch::where('id', $id)
-            ->where('organization_id', $organizationId)
+            ->where('org_id', $orgId)
             ->first();
     }
 
