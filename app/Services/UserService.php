@@ -8,9 +8,9 @@ use Illuminate\Support\Facades\Hash;
 
 class UserService
 {
-    public function getAll(int $organizationId, ?int $branchId = null, int $perPage = 15): LengthAwarePaginator
+    public function getAll(int $orgId, ?int $branchId = null, int $perPage = 15): LengthAwarePaginator
     {
-        $query = User::where('organization_id', $organizationId);
+        $query = User::where('org_id', $orgId);
 
         if ($branchId) {
             $query->where('branch_id', $branchId);
@@ -24,10 +24,10 @@ class UserService
         return User::find($id);
     }
 
-    public function findByIdAndOrganization(int $id, int $organizationId): ?User
+    public function findByIdAndOrganization(int $id, int $orgId): ?User
     {
         return User::where('id', $id)
-            ->where('organization_id', $organizationId)
+            ->where('org_id', $orgId)
             ->first();
     }
 

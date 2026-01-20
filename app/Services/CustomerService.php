@@ -7,9 +7,9 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class CustomerService
 {
-    public function getAll(int $organizationId, ?int $branchId = null, ?string $search = null, int $perPage = 15): LengthAwarePaginator
+    public function getAll(int $orgId, ?int $branchId = null, ?string $search = null, int $perPage = 15): LengthAwarePaginator
     {
-        $query = Customer::where('organization_id', $organizationId);
+        $query = Customer::where('org_id', $orgId);
 
         if ($branchId) {
             $query->where('branch_id', $branchId);
@@ -31,17 +31,17 @@ class CustomerService
         return Customer::find($id);
     }
 
-    public function findByIdAndOrganization(int $id, int $organizationId): ?Customer
+    public function findByIdAndOrganization(int $id, int $orgId): ?Customer
     {
         return Customer::where('id', $id)
-            ->where('organization_id', $organizationId)
+            ->where('org_id', $orgId)
             ->first();
     }
 
-    public function findByPhone(string $phone, int $organizationId): ?Customer
+    public function findByPhone(string $phone, int $orgId): ?Customer
     {
         return Customer::where('phone', $phone)
-            ->where('organization_id', $organizationId)
+            ->where('org_id', $orgId)
             ->first();
     }
 

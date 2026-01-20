@@ -13,6 +13,8 @@ class VehicleBrand extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'org_id',
+        'branch_id',
         'vehicle_type_id',
         'name',
         'logo',
@@ -22,6 +24,16 @@ class VehicleBrand extends Model
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class, 'org_id');
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
 
     public function vehicleType(): BelongsTo
     {

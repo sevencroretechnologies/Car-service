@@ -15,10 +15,10 @@ class CustomerRequest extends FormRequest
     public function rules(): array
     {
         $customerId = $this->route('customer');
-        $organizationId = $this->input('organization_id');
+        $orgId = $this->input('org_id');
 
         return [
-            'organization_id' => ['required', 'exists:organizations,id'],
+            'org_id' => ['required', 'exists:organizations,id'],
             'branch_id' => ['nullable', 'exists:branches,id'],
             'name' => ['required', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
@@ -27,7 +27,7 @@ class CustomerRequest extends FormRequest
                 'string',
                 'max:20',
                 Rule::unique('customers', 'phone')
-                    ->where('organization_id', $organizationId)
+                    ->where('org_id', $orgId)
                     ->ignore($customerId),
             ],
             'address' => ['nullable', 'string'],

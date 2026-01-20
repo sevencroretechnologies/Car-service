@@ -12,6 +12,8 @@ class CustomerVehicle extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'org_id',
+        'branch_id',
         'customer_id',
         'vehicle_type_id',
         'vehicle_brand_id',
@@ -27,6 +29,16 @@ class CustomerVehicle extends Model
         'is_active' => 'boolean',
         'year' => 'integer',
     ];
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class, 'org_id');
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
 
     public function customer(): BelongsTo
     {

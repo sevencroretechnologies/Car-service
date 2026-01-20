@@ -13,8 +13,9 @@ class Customer extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'organization_id',
+        'org_id',
         'branch_id',
+        'user_id',
         'name',
         'email',
         'phone',
@@ -28,12 +29,17 @@ class Customer extends Model
 
     public function organization(): BelongsTo
     {
-        return $this->belongsTo(Organization::class);
+        return $this->belongsTo(Organization::class, 'org_id');
     }
 
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function vehicles(): HasMany

@@ -13,7 +13,7 @@ class Service extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'organization_id',
+        'org_id',
         'branch_id',
         'name',
         'description',
@@ -30,7 +30,7 @@ class Service extends Model
 
     public function organization(): BelongsTo
     {
-        return $this->belongsTo(Organization::class);
+        return $this->belongsTo(Organization::class, 'org_id');
     }
 
     public function branch(): BelongsTo

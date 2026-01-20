@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -14,13 +15,12 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = [
-        'organization_id',
+        'org_id',
         'branch_id',
         'name',
         'email',
         'phone',
         'password',
-        'role',
         'is_active',
     ];
 
@@ -37,7 +37,7 @@ class User extends Authenticatable
 
     public function organization(): BelongsTo
     {
-        return $this->belongsTo(Organization::class);
+        return $this->belongsTo(Organization::class, 'org_id');
     }
 
     public function branch(): BelongsTo
@@ -45,18 +45,8 @@ class User extends Authenticatable
         return $this->belongsTo(Branch::class);
     }
 
-    public function isAdmin(): bool
+    public function customers(): HasMany
     {
-        return $this->role === 'admin';
-    }
-
-    public function isBranchManager(): bool
-    {
-        return $this->role === 'branch_manager';
-    }
-
-    public function isStaff(): bool
-    {
-        return $this->role === 'staff';
+        return $this->hasMany(Customer::class);
     }
 }

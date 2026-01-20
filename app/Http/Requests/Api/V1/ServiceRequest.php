@@ -14,7 +14,7 @@ class ServiceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'organization_id' => ['required', 'exists:organizations,id'],
+            'org_id' => ['required', 'exists:organizations,id'],
             'branch_id' => ['nullable', 'exists:branches,id'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],

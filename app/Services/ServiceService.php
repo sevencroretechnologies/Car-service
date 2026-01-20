@@ -8,9 +8,9 @@ use Illuminate\Database\Eloquent\Collection;
 
 class ServiceService
 {
-    public function getAll(int $organizationId, ?int $branchId = null, int $perPage = 15): LengthAwarePaginator
+    public function getAll(int $orgId, ?int $branchId = null, int $perPage = 15): LengthAwarePaginator
     {
-        $query = Service::where('organization_id', $organizationId);
+        $query = Service::where('org_id', $orgId);
 
         if ($branchId) {
             $query->where('branch_id', $branchId);
@@ -32,10 +32,10 @@ class ServiceService
         return Service::find($id);
     }
 
-    public function findByIdAndOrganization(int $id, int $organizationId): ?Service
+    public function findByIdAndOrganization(int $id, int $orgId): ?Service
     {
         return Service::where('id', $id)
-            ->where('organization_id', $organizationId)
+            ->where('org_id', $orgId)
             ->first();
     }
 

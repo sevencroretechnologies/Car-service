@@ -79,10 +79,10 @@ class ServiceSeeder extends Seeder
             foreach ($services as $service) {
                 Service::firstOrCreate(
                     [
-                        'organization_id' => $organization->id,
+                        'org_id' => $organization->id,
                         'name' => $service['name'],
                     ],
-                    array_merge($service, ['organization_id' => $organization->id])
+                    array_merge($service, ['org_id' => $organization->id])
                 );
             }
         }

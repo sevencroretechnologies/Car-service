@@ -8,6 +8,7 @@ use App\Services\UserService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use OpenApi\Annotations as OA;
 
 class UserController extends Controller
 {
@@ -17,6 +18,23 @@ class UserController extends Controller
         protected UserService $userService
     ) {}
 
+    /**
+     * @OA\Get(
+     *     path="/users",
+     *     summary="List users",
+     *     description="Get paginated list of users (Admin/Branch Manager only)",
+     *     operationId="usersIndex",
+     *     tags={"Users"},
+     *     security={{"sanctum":{}}},
+     *
+     *     @OA\Parameter(name="per_page", in="query", description="Items per page", @OA\Schema(type="integer", default=15)),
+     *     @OA\Parameter(name="branch_id", in="query", description="Filter by branch", @OA\Schema(type="integer")),
+     *
+     *     @OA\Response(response=200, description="Users retrieved successfully"),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=403, description="Forbidden")
+     * )
+     */
     public function index(Request $request): JsonResponse
     {
         try {
@@ -24,7 +42,7 @@ class UserController extends Controller
             $perPage = $request->input('per_page', 15);
             $branchId = $request->input('branch_id');
 
-            $users = $this->userService->getAll($user->organization_id, $branchId, $perPage);
+            $users = $this->userService->getAll($user->org_id, $branchId, $perPage);
 
             return $this->paginatedResponse($users, 'Users retrieved successfully');
         } catch (\Exception $e) {
@@ -32,13 +50,41 @@ class UserController extends Controller
         }
     }
 
+    /**
+     * @OA\Post(
+     *     path="/users",
+     *     summary="Create user",
+     *     description="Create a new staff user (Admin/Branch Manager only)",
+     *     operationId="usersStore",
+     *     tags={"Users"},
+     *     security={{"sanctum":{}}},
+     *
+     *     @OA\RequestBody(required=true, @OA\JsonContent(
+     *         required={"org_id", "name", "email", "password", "role"},
+     *
+     *         @OA\Property(property="org_id", type="integer", example=1),
+     *         @OA\Property(property="branch_id", type="integer", example=1),
+     *         @OA\Property(property="name", type="string", example="John Doe"),
+     *         @OA\Property(property="email", type="string", format="email", example="john@example.com"),
+     *         @OA\Property(property="phone", type="string", example="+1234567890"),
+     *         @OA\Property(property="password", type="string", format="password", example="password123"),
+     *         @OA\Property(property="role", type="string", enum={"admin", "branch_manager", "staff"}, example="staff"),
+     *         @OA\Property(property="is_active", type="boolean", example=true)
+     *     )),
+     *
+     *     @OA\Response(response=201, description="User created successfully"),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=403, description="Forbidden"),
+     *     @OA\Response(response=422, description="Validation error")
+     * )
+     */
     public function store(UserRequest $request): JsonResponse
     {
         try {
             $data = $request->validated();
             $currentUser = $request->user();
 
-            if (! $currentUser->isAdmin() && $data['organization_id'] != $currentUser->organization_id) {
+            if ($data['org_id'] != $currentUser->org_id) {
                 return $this->forbiddenResponse('You can only create users for your organization');
             }
 
@@ -50,11 +96,27 @@ class UserController extends Controller
         }
     }
 
+    /**
+     * @OA\Get(
+     *     path="/users/{id}",
+     *     summary="Get user",
+     *     description="Get user details by ID",
+     *     operationId="usersShow",
+     *     tags={"Users"},
+     *     security={{"sanctum":{}}},
+     *
+     *     @OA\Parameter(name="id", in="path", required=true, description="User ID", @OA\Schema(type="integer")),
+     *
+     *     @OA\Response(response=200, description="User retrieved successfully"),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=404, description="User not found")
+     * )
+     */
     public function show(Request $request, int $id): JsonResponse
     {
         try {
             $currentUser = $request->user();
-            $user = $this->userService->findByIdAndOrganization($id, $currentUser->organization_id);
+            $user = $this->userService->findByIdAndOrganization($id, $currentUser->org_id);
 
             if (! $user) {
                 return $this->notFoundResponse('User not found');
@@ -68,11 +130,41 @@ class UserController extends Controller
         }
     }
 
+    /**
+     * @OA\Put(
+     *     path="/users/{id}",
+     *     summary="Update user",
+     *     description="Update user details",
+     *     operationId="usersUpdate",
+     *     tags={"Users"},
+     *     security={{"sanctum":{}}},
+     *
+     *     @OA\Parameter(name="id", in="path", required=true, description="User ID", @OA\Schema(type="integer")),
+     *
+     *     @OA\RequestBody(required=true, @OA\JsonContent(
+     *         required={"org_id", "name", "email", "role"},
+     *
+     *         @OA\Property(property="org_id", type="integer"),
+     *         @OA\Property(property="branch_id", type="integer"),
+     *         @OA\Property(property="name", type="string"),
+     *         @OA\Property(property="email", type="string", format="email"),
+     *         @OA\Property(property="phone", type="string"),
+     *         @OA\Property(property="password", type="string", format="password"),
+     *         @OA\Property(property="role", type="string", enum={"admin", "branch_manager", "staff"}),
+     *         @OA\Property(property="is_active", type="boolean")
+     *     )),
+     *
+     *     @OA\Response(response=200, description="User updated successfully"),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=404, description="User not found"),
+     *     @OA\Response(response=422, description="Validation error")
+     * )
+     */
     public function update(UserRequest $request, int $id): JsonResponse
     {
         try {
             $currentUser = $request->user();
-            $user = $this->userService->findByIdAndOrganization($id, $currentUser->organization_id);
+            $user = $this->userService->findByIdAndOrganization($id, $currentUser->org_id);
 
             if (! $user) {
                 return $this->notFoundResponse('User not found');
@@ -91,6 +183,23 @@ class UserController extends Controller
         }
     }
 
+    /**
+     * @OA\Delete(
+     *     path="/users/{id}",
+     *     summary="Delete user",
+     *     description="Soft delete a user",
+     *     operationId="usersDestroy",
+     *     tags={"Users"},
+     *     security={{"sanctum":{}}},
+     *
+     *     @OA\Parameter(name="id", in="path", required=true, description="User ID", @OA\Schema(type="integer")),
+     *
+     *     @OA\Response(response=200, description="User deleted successfully"),
+     *     @OA\Response(response=400, description="Cannot delete own account"),
+     *     @OA\Response(response=401, description="Unauthenticated"),
+     *     @OA\Response(response=404, description="User not found")
+     * )
+     */
     public function destroy(Request $request, int $id): JsonResponse
     {
         try {
@@ -100,7 +209,7 @@ class UserController extends Controller
                 return $this->errorResponse('You cannot delete your own account', 400);
             }
 
-            $user = $this->userService->findByIdAndOrganization($id, $currentUser->organization_id);
+            $user = $this->userService->findByIdAndOrganization($id, $currentUser->org_id);
 
             if (! $user) {
                 return $this->notFoundResponse('User not found');
