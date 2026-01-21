@@ -1,7 +1,10 @@
 <?php
 
 namespace App\Services;
-
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use App\Models\Customer;
 use Exception;
 
@@ -49,39 +52,76 @@ class CustomerService
         }
     }
 
-    public function store(array $data, int $userOrgId): array
-    {
-        try {
-            if ($data['org_id'] != $userOrgId) {
-                return [
-                    'success' => false,
-                    'message' => 'You can only create customers for your organization',
-                    'status' => 403,
-                ];
-            }
+  public function store(array $data, int $userOrgId): array
+{
+    DB::beginTransaction();
 
-            $customer = Customer::create($data);
-
-            return [
-                'success' => true,
-                'message' => 'Customer created successfully',
-                'data' => $customer,
-                'status' => 201,
-            ];
-        } catch (Exception $e) {
+    try {
+        if ($data['org_id'] != $userOrgId) {
             return [
                 'success' => false,
-                'message' => 'Failed to create customer: '.$e->getMessage(),
-                'status' => 500,
+                'message' => 'You can only create customers for your organization',
+                'status' => 403,
             ];
         }
-    }
 
-    public function show(int $id, int $orgId): array
+        /**
+         * 1️⃣ Generate default password
+         */
+        $defaultPassword = Str::random(10);
+
+        /**
+         * 2️⃣ Create user
+         */
+        $user = User::create([
+            'name'      => $data['name'],
+            'email'     => $data['email'] ?? null,
+            'phone'     => $data['phone'],
+            'org_id'    => $data['org_id'],
+            'branch_id' => $data['branch_id'],
+            'password' => Hash::make('password'),
+            'role'      => 'customer',
+            'is_active' => $data['is_active'] ?? true,
+        ]);
+
+        /**
+         * 3️⃣ Attach user_id to customer
+         */
+        $data['user_id'] = $user->id;
+
+        /**
+         * 4️⃣ Create customer
+         */
+        $customer = Customer::create($data);
+
+        DB::commit();
+
+        return [
+            'success' => true,
+            'message' => 'Customer created successfully',
+            'data' => [
+                'customer' => $customer,
+                'default_password' => $defaultPassword, // show only once
+            ],
+            'status' => 201,
+        ];
+    } catch (Exception $e) {
+        DB::rollBack();
+
+        return [
+            'success' => false,
+            'message' => 'Failed to create customer: ' . $e->getMessage(),
+            'status' => 500,
+        ];
+    }
+}
+
+
+    public function show(int $id): array
     {
         try {
             $customer = Customer::where('id', $id)
-                ->where('org_id', $orgId)
+                // ->where('org_id', $orgId)
                 ->first();
 
             if (! $customer) {
@@ -92,7 +132,7 @@ class CustomerService
                 ];
             }
 
-            $customer->load(['organization', 'branch', 'vehicles.vehicleType', 'vehicles.vehicleBrand', 'vehicles.vehicleModel']);
+            $customer->load(['vehicles.vehicleType', 'vehicles.vehicleBrand', 'vehicles.vehicleModel']);
 
             return [
                 'success' => true,

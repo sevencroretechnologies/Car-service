@@ -3,6 +3,10 @@
 namespace App\Services;
 
 use App\Models\Branch;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Exception;
 
 class BranchService
@@ -31,39 +35,71 @@ class BranchService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to retrieve branches: '.$e->getMessage(),
+                'message' => 'Failed to retrieve branches: ' . $e->getMessage(),
                 'status' => 500,
             ];
         }
     }
 
-    public function store(array $data, int $userOrgId): array
-    {
-        try {
-            if ($data['org_id'] != $userOrgId) {
-                return [
-                    'success' => false,
-                    'message' => 'You can only create branches for your organization',
-                    'status' => 403,
-                ];
-            }
 
-            $branch = Branch::create($data);
+
+    public function store(array $data, $authUser): array
+    {
+        DB::beginTransaction();
+
+        try {
+            /**
+             * 1️⃣ Create Branch (org_id from logged-in user or provided)
+             */
+            $orgId = $data['branch']['org_id'] ?? $authUser->org_id;
+
+            $branch = Branch::create([
+                'org_id'   => $orgId,
+                'name'     => $data['branch']['name'],
+                'code'     => $data['branch']['code'] ?? null,
+                'email'    => $data['branch']['email'] ?? null,
+                'phone'    => $data['branch']['phone'] ?? null,
+                'address'  => $data['branch']['address'] ?? null,
+                'is_active' => $data['branch']['is_active'] ?? true,
+            ]);
+
+            /**
+             * 2️⃣ Create Branch Admin User
+             */
+            $user = User::create([
+                'name'      => $data['user']['name'],
+                'email'     => $data['user']['email'] ?? null,
+                'phone'     => $data['user']['phone'] ?? null,
+                'org_id'    => $orgId,
+                'branch_id' => $branch->id,
+                'password'  => Hash::make($data['user']['password']),
+                'role'      => 'branch_admin',
+                'is_active' => true,
+            ]);
+
+            DB::commit();
 
             return [
                 'success' => true,
-                'message' => 'Branch created successfully',
-                'data' => $branch,
+                'message' => 'Branch and branch admin created successfully',
+                'data' => [
+                    'branch' => $branch,
+                    'user'   => $user,
+                ],
                 'status' => 201,
             ];
         } catch (Exception $e) {
+            DB::rollBack();
+
             return [
                 'success' => false,
-                'message' => 'Failed to create branch: '.$e->getMessage(),
+                'message' => $e->getMessage(),
                 'status' => 500,
             ];
         }
     }
+
+
 
     public function show(int $id, int $orgId): array
     {
@@ -91,7 +127,7 @@ class BranchService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to retrieve branch: '.$e->getMessage(),
+                'message' => 'Failed to retrieve branch: ' . $e->getMessage(),
                 'status' => 500,
             ];
         }
@@ -123,7 +159,7 @@ class BranchService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to update branch: '.$e->getMessage(),
+                'message' => 'Failed to update branch: ' . $e->getMessage(),
                 'status' => 500,
             ];
         }
@@ -155,7 +191,7 @@ class BranchService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to delete branch: '.$e->getMessage(),
+                'message' => 'Failed to delete branch: ' . $e->getMessage(),
                 'status' => 500,
             ];
         }

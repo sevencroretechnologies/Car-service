@@ -29,6 +29,8 @@ class AuthService
                 ];
             }
 
+            $user->load(['organization', 'branch']);
+
             $token = $user->createToken($deviceName)->plainTextToken;
 
             return [
@@ -39,9 +41,10 @@ class AuthService
                         'id' => $user->id,
                         'name' => $user->name,
                         'email' => $user->email,
-                        'org_id' => $user->org_id,
-                        'branch_id' => $user->branch_id,
+                        'phone' => $user->phone,
                     ],
+                    'organization' => $user->organization,
+                    'branch' => $user->branch,
                     'token' => $token,
                     'token_type' => 'Bearer',
                 ],
@@ -50,7 +53,7 @@ class AuthService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Login failed: '.$e->getMessage(),
+                'message' => 'Login failed: ' . $e->getMessage(),
                 'status' => 500,
             ];
         }
@@ -70,7 +73,7 @@ class AuthService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Logout failed: '.$e->getMessage(),
+                'message' => 'Logout failed: ' . $e->getMessage(),
                 'status' => 500,
             ];
         }
@@ -98,7 +101,7 @@ class AuthService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to retrieve profile: '.$e->getMessage(),
+                'message' => 'Failed to retrieve profile: ' . $e->getMessage(),
                 'status' => 500,
             ];
         }

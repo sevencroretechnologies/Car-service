@@ -6,6 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Services\BranchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+
 
 class BranchController extends Controller
 {
@@ -43,37 +47,41 @@ class BranchController extends Controller
         }
     }
 
+
     public function store(Request $request): JsonResponse
     {
         try {
             $validated = $request->validate([
-                'org_id' => ['required', 'exists:organizations,id'],
-                'name' => ['required', 'string', 'max:255'],
-                'code' => ['nullable', 'string', 'max:50'],
-                'email' => ['nullable', 'email', 'max:255'],
-                'phone' => ['nullable', 'string', 'max:20'],
-                'address' => ['nullable', 'string'],
-                'is_active' => ['sometimes', 'boolean'],
+                // Branch
+                'branch.org_id'   => ['nullable', 'exists:organizations,id'],
+                'branch.name'     => ['required', 'string', 'max:255'],
+                'branch.code'     => ['nullable', 'string', 'max:50'],
+                'branch.email'    => ['nullable', 'email', 'max:255'],
+                'branch.phone'    => ['nullable', 'string', 'max:20'],
+                'branch.address'  => ['nullable', 'string'],
+                'branch.is_active' => ['sometimes', 'boolean'],
+
+                // User
+                'user.name' => ['required', 'string', 'max:255'],
+                'user.email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
+                'user.phone' => ['nullable', 'string', 'max:20'],
+                'user.password'  => ['required', 'string', 'min:6'],
             ]);
 
             $result = $this->branchService->store(
                 $validated,
-                $request->user()->org_id
+                $request->user()   // pass full user
             );
 
-            return response()->json([
-                'success' => $result['success'],
-                'message' => $result['message'],
-                'data' => $result['data'] ?? null,
-            ], $result['status']);
+            return response()->json($result, $result['status']);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
-                'data' => null,
             ], 500);
         }
     }
+
 
     public function show(Request $request, int $id): JsonResponse
     {
