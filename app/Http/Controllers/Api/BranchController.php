@@ -1,23 +1,22 @@
 <?php
 
-namespace App\Http\Controllers\Api\V1;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Services\CustomerVehicleService;
+use App\Services\BranchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class CustomerVehicleController extends Controller
+class BranchController extends Controller
 {
     public function __construct(
-        protected CustomerVehicleService $customerVehicleService
+        protected BranchService $branchService
     ) {}
 
-    public function index(Request $request, int $customerId): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         try {
-            $result = $this->customerVehicleService->index(
-                $customerId,
+            $result = $this->branchService->index(
                 $request->user()->org_id,
                 $request->input('per_page', 15)
             );
@@ -48,18 +47,16 @@ class CustomerVehicleController extends Controller
     {
         try {
             $validated = $request->validate([
-                'customer_id' => ['required', 'exists:customers,id'],
-                'vehicle_type_id' => ['required', 'exists:vehicle_types,id'],
-                'vehicle_brand_id' => ['required', 'exists:vehicle_brands,id'],
-                'vehicle_model_id' => ['required', 'exists:vehicle_models,id'],
-                'registration_number' => ['nullable', 'string', 'max:50'],
-                'color' => ['nullable', 'string', 'max:50'],
-                'year' => ['nullable', 'integer', 'min:1900', 'max:2100'],
-                'notes' => ['nullable', 'string'],
+                'org_id' => ['required', 'exists:organizations,id'],
+                'name' => ['required', 'string', 'max:255'],
+                'code' => ['nullable', 'string', 'max:50'],
+                'email' => ['nullable', 'email', 'max:255'],
+                'phone' => ['nullable', 'string', 'max:20'],
+                'address' => ['nullable', 'string'],
                 'is_active' => ['sometimes', 'boolean'],
             ]);
 
-            $result = $this->customerVehicleService->store(
+            $result = $this->branchService->store(
                 $validated,
                 $request->user()->org_id
             );
@@ -78,14 +75,10 @@ class CustomerVehicleController extends Controller
         }
     }
 
-    public function show(Request $request, int $customerId, int $id): JsonResponse
+    public function show(Request $request, int $id): JsonResponse
     {
         try {
-            $result = $this->customerVehicleService->show(
-                $customerId,
-                $id,
-                $request->user()->org_id
-            );
+            $result = $this->branchService->show($id, $request->user()->org_id);
 
             return response()->json([
                 'success' => $result['success'],
@@ -101,23 +94,20 @@ class CustomerVehicleController extends Controller
         }
     }
 
-    public function update(Request $request, int $customerId, int $id): JsonResponse
+    public function update(Request $request, int $id): JsonResponse
     {
         try {
             $validated = $request->validate([
-                'customer_id' => ['required', 'exists:customers,id'],
-                'vehicle_type_id' => ['required', 'exists:vehicle_types,id'],
-                'vehicle_brand_id' => ['required', 'exists:vehicle_brands,id'],
-                'vehicle_model_id' => ['required', 'exists:vehicle_models,id'],
-                'registration_number' => ['nullable', 'string', 'max:50'],
-                'color' => ['nullable', 'string', 'max:50'],
-                'year' => ['nullable', 'integer', 'min:1900', 'max:2100'],
-                'notes' => ['nullable', 'string'],
+                'org_id' => ['required', 'exists:organizations,id'],
+                'name' => ['required', 'string', 'max:255'],
+                'code' => ['nullable', 'string', 'max:50'],
+                'email' => ['nullable', 'email', 'max:255'],
+                'phone' => ['nullable', 'string', 'max:20'],
+                'address' => ['nullable', 'string'],
                 'is_active' => ['sometimes', 'boolean'],
             ]);
 
-            $result = $this->customerVehicleService->update(
-                $customerId,
+            $result = $this->branchService->update(
                 $id,
                 $request->user()->org_id,
                 $validated
@@ -137,14 +127,10 @@ class CustomerVehicleController extends Controller
         }
     }
 
-    public function destroy(Request $request, int $customerId, int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
         try {
-            $result = $this->customerVehicleService->destroy(
-                $customerId,
-                $id,
-                $request->user()->org_id
-            );
+            $result = $this->branchService->destroy($id, $request->user()->org_id);
 
             return response()->json([
                 'success' => $result['success'],

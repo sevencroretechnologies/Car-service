@@ -1,26 +1,22 @@
 <?php
 
-namespace App\Http\Controllers\Api\V1;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Services\ServiceService;
+use App\Services\VehicleTypeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class ServiceController extends Controller
+class VehicleTypeController extends Controller
 {
     public function __construct(
-        protected ServiceService $serviceService
+        protected VehicleTypeService $vehicleTypeService
     ) {}
 
     public function index(Request $request): JsonResponse
     {
         try {
-            $result = $this->serviceService->index(
-                $request->user()->org_id,
-                $request->input('branch_id'),
-                $request->input('per_page', 15)
-            );
+            $result = $this->vehicleTypeService->index($request->input('per_page', 15));
 
             $response = [
                 'success' => $result['success'],
@@ -44,10 +40,10 @@ class ServiceController extends Controller
         }
     }
 
-    public function listByBranch(int $branchId): JsonResponse
+    public function list(): JsonResponse
     {
         try {
-            $result = $this->serviceService->listByBranch($branchId);
+            $result = $this->vehicleTypeService->list();
 
             return response()->json([
                 'success' => $result['success'],
@@ -67,19 +63,12 @@ class ServiceController extends Controller
     {
         try {
             $validated = $request->validate([
-                'org_id' => ['required', 'exists:organizations,id'],
-                'branch_id' => ['nullable', 'exists:branches,id'],
                 'name' => ['required', 'string', 'max:255'],
                 'description' => ['nullable', 'string'],
-                'base_price' => ['required', 'numeric', 'min:0'],
-                'duration_minutes' => ['nullable', 'integer', 'min:1'],
                 'is_active' => ['sometimes', 'boolean'],
             ]);
 
-            $result = $this->serviceService->store(
-                $validated,
-                $request->user()->org_id
-            );
+            $result = $this->vehicleTypeService->store($validated);
 
             return response()->json([
                 'success' => $result['success'],
@@ -95,10 +84,10 @@ class ServiceController extends Controller
         }
     }
 
-    public function show(Request $request, int $id): JsonResponse
+    public function show(int $id): JsonResponse
     {
         try {
-            $result = $this->serviceService->show($id, $request->user()->org_id);
+            $result = $this->vehicleTypeService->show($id);
 
             return response()->json([
                 'success' => $result['success'],
@@ -118,20 +107,12 @@ class ServiceController extends Controller
     {
         try {
             $validated = $request->validate([
-                'org_id' => ['required', 'exists:organizations,id'],
-                'branch_id' => ['nullable', 'exists:branches,id'],
                 'name' => ['required', 'string', 'max:255'],
                 'description' => ['nullable', 'string'],
-                'base_price' => ['required', 'numeric', 'min:0'],
-                'duration_minutes' => ['nullable', 'integer', 'min:1'],
                 'is_active' => ['sometimes', 'boolean'],
             ]);
 
-            $result = $this->serviceService->update(
-                $id,
-                $request->user()->org_id,
-                $validated
-            );
+            $result = $this->vehicleTypeService->update($id, $validated);
 
             return response()->json([
                 'success' => $result['success'],
@@ -147,10 +128,10 @@ class ServiceController extends Controller
         }
     }
 
-    public function destroy(Request $request, int $id): JsonResponse
+    public function destroy(int $id): JsonResponse
     {
         try {
-            $result = $this->serviceService->destroy($id, $request->user()->org_id);
+            $result = $this->vehicleTypeService->destroy($id);
 
             return response()->json([
                 'success' => $result['success'],
