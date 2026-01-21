@@ -86,5 +86,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('pricing/{pricing}', [VehicleServicePricingController::class, 'show']);
     Route::put('pricing/{pricing}', [VehicleServicePricingController::class, 'update']);
     Route::delete('pricing/{pricing}', [VehicleServicePricingController::class, 'destroy']);
+
 });
 
