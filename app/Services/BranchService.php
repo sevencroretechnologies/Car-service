@@ -11,12 +11,11 @@ use Exception;
 
 class BranchService
 {
-    public function index(int $orgId, int $perPage = 15): array
+    public function index(int $perPage = 15): array
     {
         try {
-            $branches = Branch::where('org_id', $orgId)
-                ->orderBy('name')
-                ->paginate($perPage);
+            $branches = Branch::latest()->paginate($perPage);
+
 
             return [
                 'success' => true,

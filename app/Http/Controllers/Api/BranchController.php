@@ -21,7 +21,7 @@ class BranchController extends Controller
     {
         try {
             $result = $this->branchService->index(
-                $request->user()->org_id,
+                // $request->user()->org_id,
                 $request->input('per_page', 15)
             );
 
