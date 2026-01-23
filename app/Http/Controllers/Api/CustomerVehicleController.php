@@ -18,7 +18,7 @@ class CustomerVehicleController extends Controller
         try {
             $result = $this->customerVehicleService->index(
                 $customerId,
-                $request->user()->org_id,
+                $request->user(),
                 $request->input('per_page', 15)
             );
 
@@ -62,7 +62,7 @@ class CustomerVehicleController extends Controller
             $user = $request->user();
             $validated['org_id'] = $user->org_id;
             $validated['branch_id'] = $user->branch_id;
-            $result = $this->customerVehicleService->store($validated, $user->org_id);
+            $result = $this->customerVehicleService->store($validated, $user);
 
             return response()->json([
                 'success' => $result['success'],
@@ -84,7 +84,7 @@ class CustomerVehicleController extends Controller
             $result = $this->customerVehicleService->show(
                 $customerId,
                 $id,
-                $request->user()->org_id
+                $request->user()
             );
 
             return response()->json([
@@ -119,7 +119,7 @@ class CustomerVehicleController extends Controller
             $result = $this->customerVehicleService->update(
                 $customerId,
                 $id,
-                $request->user()->org_id,
+                $request->user(),
                 $validated
             );
 
@@ -143,7 +143,7 @@ class CustomerVehicleController extends Controller
             $result = $this->customerVehicleService->destroy(
                 $customerId,
                 $id,
-                $request->user()->org_id
+                $request->user()
             );
 
             return response()->json([
@@ -164,6 +164,7 @@ class CustomerVehicleController extends Controller
     {
         try {
             $result = $this->customerVehicleService->list(
+                $request->user(),
                 $request->input('per_page', 15),
                 $request->input('query')
             );

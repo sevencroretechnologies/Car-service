@@ -3,19 +3,18 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Traits\TenantScope;
 use Exception;
 use Illuminate\Support\Facades\Hash;
 
 class UserService
 {
-    public function index(int $orgId, ?int $branchId = null, int $perPage = 15): array
+    use TenantScope;
+
+    public function index(User $authUser, int $perPage = 15): array
     {
         try {
-            $query = User::where('org_id', $orgId);
-
-            if ($branchId) {
-                $query->where('branch_id', $branchId);
-            }
+            $query = $this->applyTenantScope(User::query(), $authUser);
 
             $users = $query->orderBy('name')->paginate($perPage);
 
@@ -63,12 +62,10 @@ class UserService
         }
     }
 
-    public function show(int $id, int $orgId): array
+    public function show(int $id, User $authUser): array
     {
         try {
-            $user = User::where('id', $id)
-                ->where('org_id', $orgId)
-                ->first();
+            $user = $this->applyTenantScope(User::where('id', $id), $authUser)->first();
 
             if (! $user) {
                 return [
@@ -95,12 +92,10 @@ class UserService
         }
     }
 
-    public function update(int $id, int $orgId, array $data): array
+    public function update(int $id, User $authUser, array $data): array
     {
         try {
-            $user = User::where('id', $id)
-                ->where('org_id', $orgId)
-                ->first();
+            $user = $this->applyTenantScope(User::where('id', $id), $authUser)->first();
 
             if (! $user) {
                 return [
@@ -133,10 +128,10 @@ class UserService
         }
     }
 
-    public function destroy(int $id, int $orgId, int $currentUserId): array
+    public function destroy(int $id, User $authUser): array
     {
         try {
-            if ($currentUserId === $id) {
+            if ($authUser->id === $id) {
                 return [
                     'success' => false,
                     'message' => 'You cannot delete your own account',
@@ -144,9 +139,7 @@ class UserService
                 ];
             }
 
-            $user = User::where('id', $id)
-                ->where('org_id', $orgId)
-                ->first();
+            $user = $this->applyTenantScope(User::where('id', $id), $authUser)->first();
 
             if (! $user) {
                 return [

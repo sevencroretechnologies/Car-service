@@ -4,16 +4,18 @@ namespace App\Services;
 
 use App\Models\Customer;
 use App\Models\CustomerVehicle;
+use App\Models\User;
+use App\Traits\TenantScope;
 use Exception;
 
 class CustomerVehicleService
 {
-    public function index(int $customerId, int $orgId, int $perPage = 15): array
+    use TenantScope;
+
+    public function index(int $customerId, User $user, int $perPage = 15): array
     {
         try {
-            $customer = Customer::where('id', $customerId)
-                ->where('org_id', $orgId)
-                ->first();
+            $customer = $this->applyTenantScope(Customer::where('id', $customerId), $user)->first();
 
             if (! $customer) {
                 return [
@@ -45,18 +47,19 @@ class CustomerVehicleService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to retrieve customer vehicles: ' . $e->getMessage(),
+                'message' => 'Failed to retrieve customer vehicles: '.$e->getMessage(),
                 'status' => 500,
             ];
         }
     }
 
-    public function store(array $data, int $orgId): array
+    public function store(array $data, User $user): array
     {
         try {
-            $customer = Customer::where('id', $data['customer_id'])
-                ->where('org_id', $orgId)
-                ->first();
+            $customer = $this->applyTenantScope(
+                Customer::where('id', $data['customer_id']),
+                $user
+            )->first();
 
             if (! $customer) {
                 return [
@@ -78,18 +81,16 @@ class CustomerVehicleService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to create customer vehicle: ' . $e->getMessage(),
+                'message' => 'Failed to create customer vehicle: '.$e->getMessage(),
                 'status' => 500,
             ];
         }
     }
 
-    public function show(int $customerId, int $vehicleId, int $orgId): array
+    public function show(int $customerId, int $vehicleId, User $user): array
     {
         try {
-            $customer = Customer::where('id', $customerId)
-                ->where('org_id', $orgId)
-                ->first();
+            $customer = $this->applyTenantScope(Customer::where('id', $customerId), $user)->first();
 
             if (! $customer) {
                 return [
@@ -122,18 +123,16 @@ class CustomerVehicleService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to retrieve customer vehicle: ' . $e->getMessage(),
+                'message' => 'Failed to retrieve customer vehicle: '.$e->getMessage(),
                 'status' => 500,
             ];
         }
     }
 
-    public function update(int $customerId, int $vehicleId, int $orgId, array $data): array
+    public function update(int $customerId, int $vehicleId, User $user, array $data): array
     {
         try {
-            $customer = Customer::where('id', $customerId)
-                ->where('org_id', $orgId)
-                ->first();
+            $customer = $this->applyTenantScope(Customer::where('id', $customerId), $user)->first();
 
             if (! $customer) {
                 return [
@@ -167,18 +166,16 @@ class CustomerVehicleService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to update customer vehicle: ' . $e->getMessage(),
+                'message' => 'Failed to update customer vehicle: '.$e->getMessage(),
                 'status' => 500,
             ];
         }
     }
 
-    public function destroy(int $customerId, int $vehicleId, int $orgId): array
+    public function destroy(int $customerId, int $vehicleId, User $user): array
     {
         try {
-            $customer = Customer::where('id', $customerId)
-                ->where('org_id', $orgId)
-                ->first();
+            $customer = $this->applyTenantScope(Customer::where('id', $customerId), $user)->first();
 
             if (! $customer) {
                 return [
@@ -211,16 +208,19 @@ class CustomerVehicleService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to delete customer vehicle: ' . $e->getMessage(),
+                'message' => 'Failed to delete customer vehicle: '.$e->getMessage(),
                 'status' => 500,
             ];
         }
     }
 
-    public function list(int $perPage = 15, ?string $search = null): array
+    public function list(User $user, int $perPage = 15, ?string $search = null): array
     {
         try {
             $query = CustomerVehicle::with(['vehicleType', 'vehicleBrand', 'vehicleModel', 'customer'])
+                ->whereHas('customer', function ($q) use ($user) {
+                    $this->applyTenantScope($q, $user);
+                })
                 ->orderBy('created_at', 'desc');
 
             if ($search) {
@@ -252,7 +252,7 @@ class CustomerVehicleService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to retrieve customer vehicles: ' . $e->getMessage(),
+                'message' => 'Failed to retrieve customer vehicles: '.$e->getMessage(),
                 'status' => 500,
             ];
         }

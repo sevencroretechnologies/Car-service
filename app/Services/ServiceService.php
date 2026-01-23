@@ -3,18 +3,18 @@
 namespace App\Services;
 
 use App\Models\Service;
+use App\Models\User;
+use App\Traits\TenantScope;
 use Exception;
 
 class ServiceService
 {
-    public function index(int $orgId, ?int $branchId = null, int $perPage = 15): array
+    use TenantScope;
+
+    public function index(User $user, int $perPage = 15): array
     {
         try {
-            $query = Service::where('org_id', $orgId);
-
-            if ($branchId) {
-                $query->where('branch_id', $branchId);
-            }
+            $query = $this->applyTenantScope(Service::query(), $user);
 
             $services = $query->orderBy('name')->paginate($perPage);
 
@@ -35,7 +35,7 @@ class ServiceService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to retrieve services: ' . $e->getMessage(),
+                'message' => 'Failed to retrieve services: '.$e->getMessage(),
                 'status' => 500,
             ];
         }
@@ -58,7 +58,7 @@ class ServiceService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to retrieve services: ' . $e->getMessage(),
+                'message' => 'Failed to retrieve services: '.$e->getMessage(),
                 'status' => 500,
             ];
         }
@@ -78,19 +78,16 @@ class ServiceService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to create service: ' . $e->getMessage(),
+                'message' => 'Failed to create service: '.$e->getMessage(),
                 'status' => 500,
             ];
         }
     }
 
-
-    public function show(int $id, int $orgId): array
+    public function show(int $id, User $user): array
     {
         try {
-            $service = Service::where('id', $id)
-                ->where('org_id', $orgId)
-                ->first();
+            $service = $this->applyTenantScope(Service::where('id', $id), $user)->first();
 
             if (! $service) {
                 return [
@@ -111,18 +108,16 @@ class ServiceService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to retrieve service: ' . $e->getMessage(),
+                'message' => 'Failed to retrieve service: '.$e->getMessage(),
                 'status' => 500,
             ];
         }
     }
 
-    public function update(int $id, int $orgId, array $data): array
+    public function update(int $id, User $user, array $data): array
     {
         try {
-            $service = Service::where('id', $id)
-                ->where('org_id', $orgId)
-                ->first();
+            $service = $this->applyTenantScope(Service::where('id', $id), $user)->first();
 
             if (! $service) {
                 return [
@@ -143,18 +138,16 @@ class ServiceService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to update service: ' . $e->getMessage(),
+                'message' => 'Failed to update service: '.$e->getMessage(),
                 'status' => 500,
             ];
         }
     }
 
-    public function destroy(int $id, int $orgId): array
+    public function destroy(int $id, User $user): array
     {
         try {
-            $service = Service::where('id', $id)
-                ->where('org_id', $orgId)
-                ->first();
+            $service = $this->applyTenantScope(Service::where('id', $id), $user)->first();
 
             if (! $service) {
                 return [
@@ -175,7 +168,7 @@ class ServiceService
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => 'Failed to delete service: ' . $e->getMessage(),
+                'message' => 'Failed to delete service: '.$e->getMessage(),
                 'status' => 500,
             ];
         }
