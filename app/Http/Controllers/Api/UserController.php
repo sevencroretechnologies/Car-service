@@ -18,8 +18,7 @@ class UserController extends Controller
     {
         try {
             $result = $this->userService->index(
-                $request->user()->org_id,
-                $request->input('branch_id'),
+                $request->user(),
                 $request->input('per_page', 15)
             );
 
@@ -69,10 +68,7 @@ class UserController extends Controller
             $validated['org_id'] = $user->org_id;
             $validated['branch_id'] = $user->branch_id;
 
-            $result = $this->userService->store(
-                $validated,
-                $request->user()->org_id
-            );
+            $result = $this->userService->store($validated);
 
             return response()->json([
                 'success' => $result['success'],
@@ -91,7 +87,7 @@ class UserController extends Controller
     public function show(Request $request, int $id): JsonResponse
     {
         try {
-            $result = $this->userService->show($id, $request->user()->org_id);
+            $result = $this->userService->show($id, $request->user());
 
             return response()->json([
                 'success' => $result['success'],
@@ -115,7 +111,7 @@ class UserController extends Controller
                 'branch_id' => ['nullable', 'exists:branches,id'],
                 'name' => ['sometimes', 'required', 'string', 'max:255'],
                 'email' => [
-                    'sometimes','required',
+                    'sometimes', 'required',
                     'email',
                     'max:255',
                     Rule::unique('users', 'email')->ignore($id),
@@ -132,7 +128,7 @@ class UserController extends Controller
 
             $result = $this->userService->update(
                 $id,
-                $request->user()->org_id,
+                $request->user(),
                 $validated
             );
 
@@ -153,8 +149,7 @@ class UserController extends Controller
     public function destroy(Request $request, int $id): JsonResponse
     {
         try {
-            $currentUser = $request->user();
-            $result = $this->userService->destroy($id, $currentUser->org_id, $currentUser->id);
+            $result = $this->userService->destroy($id, $request->user());
 
             return response()->json([
                 'success' => $result['success'],

@@ -17,8 +17,7 @@ class ServiceController extends Controller
     {
         try {
             $result = $this->serviceService->index(
-                $request->user()->org_id,
-                $request->input('branch_id'),
+                $request->user(),
                 $request->input('per_page', 15)
             );
 
@@ -81,7 +80,7 @@ class ServiceController extends Controller
             $validated['org_id'] = $user->org_id;
             $validated['branch_id'] = $user->branch_id;
 
-            $result = $this->serviceService->store($validated, $user->org_id);
+            $result = $this->serviceService->store($validated);
 
             return response()->json([
                 'success' => $result['success'],
@@ -97,11 +96,10 @@ class ServiceController extends Controller
         }
     }
 
-
     public function show(Request $request, int $id): JsonResponse
     {
         try {
-            $result = $this->serviceService->show($id, $request->user()->org_id);
+            $result = $this->serviceService->show($id, $request->user());
 
             return response()->json([
                 'success' => $result['success'],
@@ -137,7 +135,7 @@ class ServiceController extends Controller
 
             $result = $this->serviceService->update(
                 $id,
-                $request->user()->org_id,
+                $request->user(),
                 $validated
             );
 
@@ -158,7 +156,7 @@ class ServiceController extends Controller
     public function destroy(Request $request, int $id): JsonResponse
     {
         try {
-            $result = $this->serviceService->destroy($id, $request->user()->org_id);
+            $result = $this->serviceService->destroy($id, $request->user());
 
             return response()->json([
                 'success' => $result['success'],

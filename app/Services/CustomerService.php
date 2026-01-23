@@ -1,23 +1,23 @@
 <?php
 
 namespace App\Services;
+
+use App\Models\Customer;
 use App\Models\User;
+use App\Traits\TenantScope;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use App\Models\Customer;
-use Exception;
 
 class CustomerService
 {
-    public function index(int $orgId, ?int $branchId = null, ?string $search = null, int $perPage = 15): array
+    use TenantScope;
+
+    public function index(User $user, ?string $search = null, int $perPage = 15): array
     {
         try {
-            $query = Customer::where('org_id', $orgId);
-
-            if ($branchId) {
-                $query->where('branch_id', $branchId);
-            }
+            $query = $this->applyTenantScope(Customer::query(), $user);
 
             if ($search) {
                 $query->where(function ($q) use ($search) {
@@ -52,74 +52,70 @@ class CustomerService
         }
     }
 
- public function store(array $data, User $authUser): array
-{
-    DB::beginTransaction();
+    public function store(array $data, User $authUser): array
+    {
+        DB::beginTransaction();
 
-    try {
-        // 🔐 FORCE org_id & branch_id FROM TOKEN
-        $data['org_id'] = $authUser->org_id;
-        $data['branch_id'] = $authUser->branch_id;
+        try {
+            // 🔐 FORCE org_id & branch_id FROM TOKEN
+            $data['org_id'] = $authUser->org_id;
+            $data['branch_id'] = $authUser->branch_id;
 
-        /**
-         * Generate default password
-         */
-        $defaultPassword = Str::random(10);
+            /**
+             * Generate default password
+             */
+            $defaultPassword = Str::random(10);
 
-        /**
-         * Create user
-         */
-        $user = User::create([
-            'name'      => $data['name'],
-            'email'     => $data['email'] ?? null,
-            'phone'     => $data['phone'],
-            'org_id'    => $authUser->org_id,
-            'branch_id' => $authUser->branch_id,
-            'password'  => Hash::make('password'),
-            'role'      => 'customer',
-            'is_active' => $data['is_active'] ?? true,
-        ]);
+            /**
+             * Create user
+             */
+            $user = User::create([
+                'name' => $data['name'],
+                'email' => $data['email'] ?? null,
+                'phone' => $data['phone'],
+                'org_id' => $authUser->org_id,
+                'branch_id' => $authUser->branch_id,
+                'password' => Hash::make('password'),
+                'role' => 'customer',
+                'is_active' => $data['is_active'] ?? true,
+            ]);
 
-        /**
-         * Attach user_id to customer
-         */
-        $data['user_id'] = $user->id;
+            /**
+             * Attach user_id to customer
+             */
+            $data['user_id'] = $user->id;
 
-        /**
-         * Create customer
-         */
-        $customer = Customer::create($data);
+            /**
+             * Create customer
+             */
+            $customer = Customer::create($data);
 
-        DB::commit();
+            DB::commit();
 
-        return [
-            'success' => true,
-            'message' => 'Customer created successfully',
-            'data' => [
-                'customer' => $customer,
-                'default_password' => $defaultPassword,
-            ],
-            'status' => 201,
-        ];
-    } catch (Exception $e) {
-        DB::rollBack();
+            return [
+                'success' => true,
+                'message' => 'Customer created successfully',
+                'data' => [
+                    'customer' => $customer,
+                    'default_password' => $defaultPassword,
+                ],
+                'status' => 201,
+            ];
+        } catch (Exception $e) {
+            DB::rollBack();
 
-        return [
-            'success' => false,
-            'message' => 'Failed to create customer: ' . $e->getMessage(),
-            'status' => 500,
-        ];
+            return [
+                'success' => false,
+                'message' => 'Failed to create customer: '.$e->getMessage(),
+                'status' => 500,
+            ];
+        }
     }
-}
 
-
-
-    public function show(int $id): array
+    public function show(int $id, User $user): array
     {
         try {
-            $customer = Customer::where('id', $id)
-                // ->where('org_id', $orgId)
-                ->first();
+            $customer = $this->applyTenantScope(Customer::where('id', $id), $user)->first();
 
             if (! $customer) {
                 return [
@@ -146,12 +142,10 @@ class CustomerService
         }
     }
 
-    public function update(int $id, int $orgId, array $data): array
+    public function update(int $id, User $user, array $data): array
     {
         try {
-            $customer = Customer::where('id', $id)
-                ->where('org_id', $orgId)
-                ->first();
+            $customer = $this->applyTenantScope(Customer::where('id', $id), $user)->first();
 
             if (! $customer) {
                 return [
@@ -178,12 +172,10 @@ class CustomerService
         }
     }
 
-    public function destroy(int $id, int $orgId): array
+    public function destroy(int $id, User $user): array
     {
         try {
-            $customer = Customer::where('id', $id)
-                ->where('org_id', $orgId)
-                ->first();
+            $customer = $this->applyTenantScope(Customer::where('id', $id), $user)->first();
 
             if (! $customer) {
                 return [
@@ -210,7 +202,7 @@ class CustomerService
         }
     }
 
-    public function searchByPhone(string $phone, int $orgId): array
+    public function searchByPhone(string $phone, User $user): array
     {
         try {
             if (empty($phone)) {
@@ -221,9 +213,7 @@ class CustomerService
                 ];
             }
 
-            $customer = Customer::where('phone', $phone)
-                ->where('org_id', $orgId)
-                ->first();
+            $customer = $this->applyTenantScope(Customer::where('phone', $phone), $user)->first();
 
             if (! $customer) {
                 return [

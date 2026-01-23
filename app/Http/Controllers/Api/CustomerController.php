@@ -18,8 +18,7 @@ class CustomerController extends Controller
     {
         try {
             $result = $this->customerService->index(
-                $request->user()->org_id,
-                $request->input('branch_id'),
+                $request->user(),
                 $request->input('search'),
                 $request->input('per_page', 15)
             );
@@ -46,49 +45,48 @@ class CustomerController extends Controller
         }
     }
 
-  public function store(Request $request): JsonResponse
-{
-    try {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'phone' => [
-                'required',
-                'string',
-                'max:20',
-                Rule::unique('customers', 'phone')
-                    ->where('org_id', $request->user()->org_id),
-            ],
-            'address' => ['nullable', 'string'],
-            'is_active' => ['sometimes', 'boolean'],
-        ], [
-            'phone.unique' => 'A customer with this phone number already exists in your organization.',
-        ]);
+    public function store(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['nullable', 'email', 'max:255'],
+                'phone' => [
+                    'required',
+                    'string',
+                    'max:20',
+                    Rule::unique('customers', 'phone')
+                        ->where('org_id', $request->user()->org_id),
+                ],
+                'address' => ['nullable', 'string'],
+                'is_active' => ['sometimes', 'boolean'],
+            ], [
+                'phone.unique' => 'A customer with this phone number already exists in your organization.',
+            ]);
 
-        $result = $this->customerService->store(
-            $validated,
-            $request->user()
-        );
+            $result = $this->customerService->store(
+                $validated,
+                $request->user()
+            );
 
-        return response()->json([
-            'success' => $result['success'],
-            'message' => $result['message'],
-            'data' => $result['data'] ?? null,
-        ], $result['status']);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => $e->getMessage(),
-            'data' => null,
-        ], 500);
+            return response()->json([
+                'success' => $result['success'],
+                'message' => $result['message'],
+                'data' => $result['data'] ?? null,
+            ], $result['status']);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'data' => null,
+            ], 500);
+        }
     }
-}
-
 
     public function show(Request $request, int $id): JsonResponse
     {
         try {
-            $result = $this->customerService->show($id, $request->user()->org_id);
+            $result = $this->customerService->show($id, $request->user());
 
             return response()->json([
                 'success' => $result['success'],
@@ -130,7 +128,7 @@ class CustomerController extends Controller
 
             $result = $this->customerService->update(
                 $id,
-                $request->user()->org_id,
+                $request->user(),
                 $validated
             );
 
@@ -151,7 +149,7 @@ class CustomerController extends Controller
     public function destroy(Request $request, int $id): JsonResponse
     {
         try {
-            $result = $this->customerService->destroy($id, $request->user()->org_id);
+            $result = $this->customerService->destroy($id, $request->user());
 
             return response()->json([
                 'success' => $result['success'],
@@ -172,7 +170,7 @@ class CustomerController extends Controller
         try {
             $result = $this->customerService->searchByPhone(
                 $request->input('phone', ''),
-                $request->user()->org_id
+                $request->user()
             );
 
             return response()->json([
