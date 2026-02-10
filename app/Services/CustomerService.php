@@ -172,35 +172,50 @@ class CustomerService
         }
     }
 
-    public function destroy(int $id, User $user): array
-    {
-        try {
-            $customer = $this->applyTenantScope(Customer::where('id', $id), $user)->first();
+public function destroy(int $id, User $user): array
+{
+    DB::beginTransaction();
 
-            if (! $customer) {
-                return [
-                    'success' => false,
-                    'message' => 'Customer not found',
-                    'status' => 404,
-                ];
-            }
+    try {
+        $customer = $this->applyTenantScope(Customer::where('id', $id), $user)->first();
 
-            $customer->delete();
-
-            return [
-                'success' => true,
-                'message' => 'Customer deleted successfully',
-                'data' => null,
-                'status' => 200,
-            ];
-        } catch (Exception $e) {
+        if (!$customer) {
+            DB::rollBack();
             return [
                 'success' => false,
-                'message' => 'Failed to delete customer: '.$e->getMessage(),
-                'status' => 500,
+                'message' => 'Customer not found',
+                'status' => 404,
             ];
         }
+
+        // Get the associated user before deleting customer
+        $customerUser = $customer->user;
+
+        // Delete the customer
+        $customer->delete();
+
+        // Also delete the associated user if exists
+        if ($customerUser) {
+            $customerUser->delete();
+        }
+
+        DB::commit();
+
+        return [
+            'success' => true,
+            'message' => 'Customer and associated user deleted successfully',
+            'data' => null,
+            'status' => 200,
+        ];
+    } catch (Exception $e) {
+        DB::rollBack();
+        return [
+            'success' => false,
+            'message' => 'Failed to delete customer: '.$e->getMessage(),
+            'status' => 500,
+        ];
     }
+}
 
     public function searchByPhone(string $phone, User $user): array
     {

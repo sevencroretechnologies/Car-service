@@ -13,32 +13,36 @@ class VehicleTypeController extends Controller
         protected VehicleTypeService $vehicleTypeService
     ) {}
 
-    public function index(Request $request): JsonResponse
-    {
-        try {
-            $result = $this->vehicleTypeService->index($request->user(), $request->input('per_page', 15));
+public function index(Request $request): JsonResponse
+{
+    try {
+        $result = $this->vehicleTypeService->index(
+            $request->user(), 
+            $request->input('search'),
+            $request->input('per_page', 15)
+        );
 
-            $response = [
-                'success' => $result['success'],
-                'message' => $result['message'],
-            ];
+        $response = [
+            'success' => $result['success'],
+            'message' => $result['message'],
+        ];
 
-            if (isset($result['data'])) {
-                $response['data'] = $result['data'];
-            }
-            if (isset($result['pagination'])) {
-                $response['pagination'] = $result['pagination'];
-            }
-
-            return response()->json($response, $result['status']);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-                'data' => null,
-            ], 500);
+        if (isset($result['data'])) {
+            $response['data'] = $result['data'];
         }
+        if (isset($result['pagination'])) {
+            $response['pagination'] = $result['pagination'];
+        }
+
+        return response()->json($response, $result['status']);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage(),
+            'data' => null,
+        ], 500);
     }
+}
 
     public function list(Request $request): JsonResponse
     {

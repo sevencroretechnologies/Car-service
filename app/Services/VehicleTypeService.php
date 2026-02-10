@@ -11,35 +11,42 @@ class VehicleTypeService
 {
     use TenantScope;
 
-    public function index(User $user, int $perPage = 15): array
-    {
-        try {
-            $query = $this->applyTenantScope(VehicleType::query(), $user);
-            $vehicleTypes = $query->orderBy('name')->paginate($perPage);
+public function index(User $user, ?string $search = null, int $perPage = 15): array
+{
+    try {
+        $query = $this->applyTenantScope(VehicleType::query(), $user);
 
-            return [
-                'success' => true,
-                'message' => 'Vehicle types retrieved successfully',
-                'data' => $vehicleTypes->items(),
-                'pagination' => [
-                    'current_page' => $vehicleTypes->currentPage(),
-                    'total_pages' => $vehicleTypes->lastPage(),
-                    'per_page' => $vehicleTypes->perPage(),
-                    'total' => $vehicleTypes->total(),
-                    'next_page_url' => $vehicleTypes->nextPageUrl(),
-                    'prev_page_url' => $vehicleTypes->previousPageUrl(),
-                ],
-                'status' => 200,
-            ];
-        } catch (Exception $e) {
-            return [
-                'success' => false,
-                'message' => 'Failed to retrieve vehicle types: '.$e->getMessage(),
-                'status' => 500,
-            ];
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
         }
-    }
 
+        $vehicleTypes = $query->orderBy('name')->paginate($perPage);
+
+        return [
+            'success' => true,
+            'message' => 'Vehicle types retrieved successfully',
+            'data' => $vehicleTypes->items(),
+            'pagination' => [
+                'current_page' => $vehicleTypes->currentPage(),
+                'total_pages' => $vehicleTypes->lastPage(),
+                'per_page' => $vehicleTypes->perPage(),
+                'total' => $vehicleTypes->total(),
+                'next_page_url' => $vehicleTypes->nextPageUrl(),
+                'prev_page_url' => $vehicleTypes->previousPageUrl(),
+            ],
+            'status' => 200,
+        ];
+    } catch (Exception $e) {
+        return [
+            'success' => false,
+            'message' => 'Failed to retrieve vehicle types: '.$e->getMessage(),
+            'status' => 500,
+        ];
+    }
+}
     public function list(User $user): array
     {
         try {
